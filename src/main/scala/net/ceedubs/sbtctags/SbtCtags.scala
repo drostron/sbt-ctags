@@ -54,13 +54,20 @@ object SbtCtags extends Plugin {
 
   def defaultCtagsGeneration(context: CtagsGenerationContext) {
     val ctagsParams = context.ctagsParams
-    val dirArgs = context.srcDirs.map(_.getAbsolutePath).mkString(" ")
-    val excludeArgs = ctagsParams.excludes.map(x => s"--exclude=$x").mkString(" ")
-    val languagesArgs = if (ctagsParams.languages.isEmpty) "" else s"--languages=${ctagsParams.languages.mkString(",")}"
-    val extraArgs = ctagsParams.extraArgs.mkString(" ")
+    val dirArgs = context.srcDirs.map(_.getAbsolutePath)
+    val excludeArgs = ctagsParams.excludes.map(x => s"--exclude=$x")
+    val languagesArgs = if (ctagsParams.languages.isEmpty) Seq() else Seq(s"--languages=${ctagsParams.languages.mkString(",")}")
+    val extraArgs = ctagsParams.extraArgs
     // will look something like "ctags --exclude=.git --exclude=log --languages=scala -f .tags -R src/main/scala target/sbt-ctags-dep-srcs"
-    val ctagsCmd = s"${ctagsParams.executable} $excludeArgs $languagesArgs -f ${ctagsParams.tagFileName} $extraArgs -R $dirArgs"
-    context.log.info(s"running this command to generate ctags: $ctagsCmd")
+    val ctagsCmd =
+      Seq(ctagsParams.executable) ++
+      excludeArgs ++
+      languagesArgs ++
+      Seq("-f", ctagsParams.tagFileName) ++
+      extraArgs ++
+      Seq("-R") ++
+      dirArgs
+    context.log.info(s"running this command to generate ctags: ${ctagsCmd.mkString(" ")}")
     Process(ctagsCmd, Some(new File(context.buildStructure.root)), Seq.empty: _*).!
   }
 
